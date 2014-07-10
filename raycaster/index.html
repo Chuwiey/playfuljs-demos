@@ -84,6 +84,8 @@
         this.skybox = new Bitmap('assets/deathvalley_panorama.jpg', 2000, 750);
         this.wallTexture = new Bitmap('assets/wall_texture.jpg', 1024, 1024);
         this.light = 0;
+        this.st = [-1,-1];
+        this.end = [-2,-2];
       }
 
       Map.prototype.get = function(x, y) {
@@ -97,7 +99,25 @@
         for (var i = 0; i < this.size * this.size; i++) {
           this.wallGrid[i] = Math.random() < 0.3 ? 1 : 0;
         }
+        this.st = this.StartEnd();
+        this.end = this.StartEnd();
       };
+
+      Map.prototype.isMarkedLocation = function(x,y) {
+        if ((x === this.st[0] && y === this.st[1]) || (x === this.end[0] && y === this.end[1])) {
+          return true;
+        }
+        return false;
+      }
+
+      Map.prototype.StartEnd = function() {
+        var x = Math.floor(Math.random()*this.size);
+        var y = Math.floor(Math.random()*this.size);
+        if (this.get(x,y) || this.isMarkedLocation(x,y)) {
+          this.StartEnd();
+        }
+        return [x,y];
+      }
 
       Map.prototype.cast = function(point, angle, range) {
         var self = this;
@@ -261,29 +281,43 @@
       };
 
       var display = document.getElementById('display');
-      var player = new Player(15.3, -1.2, Math.PI * 0.3);
-      var map = new Map(32);
+      var map = new Map(16);
+      map.randomize();
+      var player = new Player(map.st[0], map.st[1], Math.PI * 0.3);
       var controls = new Controls();
       var camera = new Camera(display, MOBILE ? 160 : 320, 0.8);
       var loop = new GameLoop();
 
-      map.randomize();
+      var printMaze = function() { 
+        var maze = '';
+        for (var i = 0; i < map.wallGrid.length; i++) {
+          if (!(i % map.size)) {
+            maze += '\n';
+          }
+          if (map.st[1] * map.size + map.st[0] === i) {
+            maze += 'S,';
+          }
+          else if(map.end[1] * map.size + map.end[0] === i) {
+            maze += 'E,';
+          }
+          else if (Math.floor(player.y) * map.size + Math.floor(player.x) === i) {
+            maze += 'X,';
+          }
+          else {
+            maze += map.wallGrid[i] + ',';
+          }
+        }
+        console.clear();
+        console.log(maze);
+      }
       
       loop.start(function frame(seconds) {
         map.update(seconds);
         player.update(controls.states, map, seconds);
         camera.render(player, map);
+        printMaze();
       });
 
-    </script>
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-      ga('create', 'UA-50885475-1', 'playfuljs.com');
-      ga('send', 'pageview');
     </script>
   </body>
 </html>
